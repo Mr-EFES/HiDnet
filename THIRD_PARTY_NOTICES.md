@@ -1,5 +1,9 @@
 # Third-party software
 
+HiDnet's application and adapter source are licensed under the GNU General
+Public License, version 3 (GPL-3.0-only); see LICENSE. Third-party components
+retain their respective licenses and copyright notices.
+
 HiDnet links the OpenFlux Go core from
 <https://github.com/wlruscfd/openflux-server> at
 `213694537582cd8194296ad255394b06c361eaf5`, a fork of
@@ -18,9 +22,13 @@ libraries (BSD-3-Clause). Distributions must include the actual applicable
 upstream notices and corresponding source where required; this list alone is
 not a complete distribution license bundle.
 
-The repository originally contains a GPLv2 `LICENSE`. It has not been relicensed
-as part of implementing this development version. A GPLv2-only application
-license is not compatible with linking this GPLv3 core. The owner must resolve
-licensing before distributing a combined binary, including compatibility with
-the chosen iOS distribution terms. No App Store distribution approval or
-license compatibility determination is implied by this prototype.
+The owner approved moving this HiDnet version to GPLv3 before distributing a
+combined binary with the GPLv3 OpenFlux core. Earlier repository history is
+unchanged. This does not relicense third-party components or imply App Store
+distribution approval.
+
+Each binary release includes HiDnet-source.tar.gz: the tagged HiDnet source,
+vendored Go dependencies including their license/notice files, and the Go
+standard library/toolchain source and license. SOURCE_BUILD.md in that archive
+describes rebuilding with the vendored dependencies. Apple's system SDKs are
+provided separately through Xcode.
