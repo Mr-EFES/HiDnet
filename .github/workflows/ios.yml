@@ -1,0 +1,99 @@
+name: iOS development build
+
+on:
+  push:
+    branches: [main, work]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: engine/go.mod
+          cache-dependency-path: engine/go.sum
+      - name: Test profile imports and Go adapter
+        run: bash scripts/check.sh
+      - name: Build OpenFlux for iPhone and simulators
+        run: bash scripts/build-core.sh
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Compile iPhone app and VPN extension without signing
+        run: |
+          xcodebuild -project HiDnet.xcodeproj -scheme HiDnet \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/HiDnet.xcarchive \
+            CODE_SIGNING_ALLOWED=NO archive
+      - name: Package IPA for SideStore re-signing
+        run: python3 scripts/package-ipa.py --ad-hoc-sign
+      - name: Package corresponding source
+        run: bash scripts/package-sources.sh
+      - name: Upload IPA
+        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: HiDnet-IPA
+          path: |
+            build/HiDnet.ipa
+            build/HiDnet.ipa.sha256
+            build/HiDnet-source.tar.gz
+            build/HiDnet-source.tar.gz.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Compile simulator app
+        run: |
+          xcodebuild -project HiDnet.xcodeproj -scheme HiDnet \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+        with:
+          name: HiDnet-unsigned-development-build
+          path: |
+            build/HiDnet.xcarchive
+            build/DerivedData/Build/Products/Debug-iphonesimulator/HiDnet.app
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: HiDnet-IPA
+          path: release
+      - name: Verify release artifact
+        working-directory: release
+        run: |
+          sha256sum --check HiDnet.ipa.sha256
+          sha256sum --check HiDnet-source.tar.gz.sha256
+      - name: Publish development prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release/HiDnet.ipa release/HiDnet.ipa.sha256 \
+            release/HiDnet-source.tar.gz release/HiDnet-source.tar.gz.sha256 \
+            LICENSE THIRD_PARTY_NOTICES.md \
+            --verify-tag --prerelease \
+            --title "HiDnet $GITHUB_REF_NAME" \
+            --notes-file docs/RELEASE_NOTES.md

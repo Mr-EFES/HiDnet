@@ -1,0 +1,101 @@
+name: HiDnet
+options:
+  minimumXcodeGenVersion: "2.42.0"
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+packages:
+  HiDnetCore:
+    path: Packages/HiDnetCore
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    HIDNET_BUNDLE_PREFIX: com.hidnet
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+targets:
+  HiDnet:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - Shared
+    dependencies:
+      - package: HiDnetCore
+      - target: HiDnetTunnel
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(HIDNET_BUNDLE_PREFIX).app
+        PRODUCT_NAME: HiDnet
+        GENERATE_INFOPLIST_FILE: "NO"
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: HiDnet
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSCameraUsageDescription: Камера нужна для сканирования QR-кода профиля OpenFlux.
+        HiDnetKeychainGroup: $(AppIdentifierPrefix)$(HIDNET_BUNDLE_PREFIX).shared
+        HiDnetTunnelBundleIdentifier: $(HIDNET_BUNDLE_PREFIX).app.tunnel
+        CFBundleURLTypes:
+          - CFBundleURLName: OpenFlux profile import
+            CFBundleURLSchemes: [openflux]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+    entitlements:
+      path: App/HiDnet.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+        keychain-access-groups: [$(AppIdentifierPrefix)$(HIDNET_BUNDLE_PREFIX).shared]
+  HiDnetTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Tunnel
+      - Shared
+    dependencies:
+      - package: HiDnetCore
+      - framework: Frameworks/HiDnetEngine.xcframework
+        embed: false
+      - sdk: Security.framework
+      - sdk: CoreFoundation.framework
+      - sdk: SystemConfiguration.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(HIDNET_BUNDLE_PREFIX).app.tunnel
+        APPLICATION_EXTENSION_API_ONLY: "YES"
+        SKIP_INSTALL: "YES"
+        GENERATE_INFOPLIST_FILE: "NO"
+        OTHER_LDFLAGS: [$(inherited), "-lresolv"]
+    info:
+      path: Tunnel/Info.plist
+      properties:
+        CFBundleDisplayName: HiDnet Tunnel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        HiDnetKeychainGroup: $(AppIdentifierPrefix)$(HIDNET_BUNDLE_PREFIX).shared
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: Tunnel/HiDnetTunnel.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+        keychain-access-groups: [$(AppIdentifierPrefix)$(HIDNET_BUNDLE_PREFIX).shared]
+schemes:
+  HiDnet:
+    build:
+      targets:
+        HiDnet: all
+        HiDnetTunnel: all
+    run:
+      config: Debug
+    archive:
+      config: Release
