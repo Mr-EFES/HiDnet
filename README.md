@@ -3,6 +3,10 @@
 Нативный VPN-клиент OpenFlux для iPhone: SwiftUI, Network Extension и Go-ядро
 из `wlruscfd/openflux-server`. Минимальная версия — iOS 16.
 
+**Предварительный релиз:** [v0.1.0-alpha.1](https://github.com/Mr-EFES/HiDnet/releases/tag/v0.1.0-alpha.1)
+· [Скачать HiDnet.ipa](https://github.com/Mr-EFES/HiDnet/releases/download/v0.1.0-alpha.1/HiDnet.ipa).
+Для установки нужна переподпись; для VPN — разрешение Apple на Network Extensions.
+
 Это первая версия для разработки. Подготовлены исходники приложения и настоящего
 VPN-расширения. [Сборка Xcode для iPhone и симулятора прошла на macOS](https://github.com/Mr-EFES/HiDnet/actions/runs/42392315098).
 Подключение к серверу на iPhone, переподпись и работа интерфейса на устройстве
